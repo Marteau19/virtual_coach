@@ -435,60 +435,117 @@ export async function POST(request: Request, { params }) {
 - Missed workouts
 - Coach commentary on adherence
 
-### Week 6: Zwift Export
+### Week 6: Automatic Workout Sync to Zwift & Garmin
 
-#### 6.1 .zwo File Generator (Days 1-2)
+#### 6.1 Intervals.icu Workout Push Integration (Days 1-3)
 **Files to create:**
 
-`src/lib/zwift/zwo-generator.ts` - Generate .zwo XML files
+`src/lib/intervals/workout-sync.ts` - Push workouts to Intervals.icu
 ```typescript
-export function generateZwoFile(workout: Workout): string {
-  // Convert workout structure to Zwift .zwo XML format
-  // Example:
-  // <workout_file>
-  //   <author>Virtual Coach</author>
-  //   <name>Sweet Spot Intervals</name>
-  //   <description>4x8min @ 88-92% FTP</description>
-  //   <sportType>bike</sportType>
-  //   <workout>
-  //     <Warmup Duration="600" PowerLow="0.5" PowerHigh="0.7"/>
-  //     <SteadyState Duration="480" Power="0.90"/>
-  //     <Cooldown Duration="300" PowerLow="0.6" PowerHigh="0.5"/>
-  //   </workout>
-  // </workout_file>
+import { IntervalsIcuClient } from './client';
+
+export async function pushWorkoutToIntervals(
+  client: IntervalsIcuClient,
+  workout: Workout
+): Promise<void> {
+  // Convert our workout format to Intervals.icu event structure
+  const event = {
+    category: 'WORKOUT',
+    start_date_local: workout.scheduled_date,
+    name: workout.name,
+    description: workout.description,
+    workout_doc: buildWorkoutDoc(workout), // Structured intervals
+  };
+
+  // POST to /api/v1/athlete/{id}/events
+  await client.createEvent(event);
+
+  // Intervals.icu automatically syncs to:
+  // - Zwift (appears in workout list)
+  // - Garmin Connect (appears on calendar)
+}
+
+function buildWorkoutDoc(workout: Workout): object {
+  // Convert workout.workout_data to Intervals.icu format
+  // Supports: warmup, intervals, cooldown, power zones, etc.
 }
 ```
 
-**Reference:** https://github.com/h4l/zwift-workout-file-reference
+`src/lib/intervals/client.ts` - Add createEvent method
+```typescript
+async createEvent(athleteId: string, event: IntervalsEvent) {
+  return this.post(`/api/v1/athlete/${athleteId}/events`, event);
+}
 
-#### 6.2 Export API & UI (Days 3-4)
+async updateEvent(athleteId: string, eventId: string, event: IntervalsEvent) {
+  return this.put(`/api/v1/athlete/${athleteId}/events/${eventId}`, event);
+}
+
+async deleteEvent(athleteId: string, eventId: string) {
+  return this.delete(`/api/v1/athlete/${athleteId}/events/${eventId}`);
+}
+```
+
+#### 6.2 Sync API Endpoints (Days 3-4)
 **Files to create:**
 
-`src/app/api/workouts/[id]/export/zwift/route.ts` - Generate and return .zwo file
+`src/app/api/workouts/[id]/sync/route.ts` - Push single workout to Intervals.icu
 ```typescript
-export async function GET(request: Request, { params }) {
+export async function POST(request: Request, { params }) {
+  const user = await getUser();
   const workout = await getWorkout(params.id);
-  const zwoContent = generateZwoFile(workout);
 
-  return new Response(zwoContent, {
-    headers: {
-      'Content-Type': 'application/xml',
-      'Content-Disposition': `attachment; filename="${workout.name}.zwo"`,
-    },
+  // Get user's Intervals.icu credentials
+  const profile = await getUserProfile(user.id);
+  const client = new IntervalsIcuClient(
+    profile.intervals_icu_api_key,
+    profile.intervals_icu_athlete_id
+  );
+
+  // Push to Intervals.icu
+  await pushWorkoutToIntervals(client, workout);
+
+  return NextResponse.json({
+    success: true,
+    message: 'Workout synced to Intervals.icu, Zwift, and Garmin'
   });
 }
 ```
 
-`src/components/workouts/ExportButton.tsx` - Download button component
+`src/app/api/plans/[id]/sync/route.ts` - Push entire training plan
 
-#### 6.3 Bulk Export & Instructions (Day 5)
+#### 6.3 UI & Automatic Sync (Day 5)
+**Files to create:**
+
+`src/components/workouts/SyncButton.tsx` - Manual sync button
+```typescript
+'use client';
+
+export function SyncButton({ workoutId }: { workoutId: string }) {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    await fetch(`/api/workouts/${workoutId}/sync`, { method: 'POST' });
+    setIsSyncing(false);
+    toast.success('Workout synced to Zwift and Garmin!');
+  };
+
+  return (
+    <button onClick={handleSync} disabled={isSyncing}>
+      {isSyncing ? 'Syncing...' : 'Push to Zwift & Garmin'}
+    </button>
+  );
+}
+```
+
 **Features:**
-- Export single workout
-- Export week of workouts
-- Export entire training plan
-- Help modal with instructions on adding to Zwift
-
-`src/app/dashboard/help/zwift-setup/page.tsx` - Setup instructions
+- Push single workout to Intervals.icu (auto-syncs to Zwift & Garmin)
+- Push entire week of workouts
+- Push full training plan
+- Automatic sync when plan is created or modified
+- Status indicator showing sync state
+- Zero manual steps for user!
 
 ### Week 6 End: Phase 2 Testing & Release
 
@@ -499,28 +556,52 @@ export async function GET(request: Request, { params }) {
 - ✅ Calendar displays correctly
 - ✅ Workouts auto-match to completed activities
 - ✅ Adherence metrics calculate correctly
-- ✅ .zwo files work in Zwift
-- ✅ Export multiple workouts at once
+- ✅ Workout successfully pushes to Intervals.icu
+- ✅ Workout appears in Zwift workout list (check Zwift app)
+- ✅ Workout appears on Garmin Connect calendar
+- ✅ Bulk sync of training plan works
+- ✅ Sync status updates correctly in UI
 
 ---
 
-## Phase 3: Advanced Features (Weeks 7-10)
+## Phase 3: Advanced Features (Weeks 7-9)
 
-### Week 7: Garmin Integration
+### Week 7: Advanced Coach Features
 
-#### 7.1 Apply for Garmin API Access (Days 1-2)
-- Visit https://developer.garmin.com/gc-developer-program/
-- Submit application as business developer
-- Wait for approval (can take 1-2 weeks)
+#### 7.1 Weekly Performance Reviews (Days 1-2)
+**Files to create:**
 
-#### 7.2 Implement OAuth Flow (Days 3-5)
-**Once approved:**
+`src/lib/ai/weekly-review.ts` - Generate weekly summary
+```typescript
+export async function generateWeeklyReview(userId: string) {
+  // 1. Fetch last week's activities
+  // 2. Calculate weekly TSS, duration, adherence
+  // 3. Analyze performance trends
+  // 4. Use Claude to write review
+  // 5. Save as coach conversation
+  // 6. Optionally send notification
+}
+```
 
-`src/app/api/auth/garmin/route.ts` - Garmin OAuth callback
-`src/lib/garmin/client.ts` - Garmin API client
-`src/lib/garmin/workout-sync.ts` - Push workouts to Garmin
+**Trigger:** Cron job every Monday morning
 
-**Note:** If approval takes too long, users can continue using Intervals.icu to push to Garmin.
+#### 7.2 Automated Check-ins (Days 3-4)
+**Features:**
+- "How are you feeling?" prompts
+- Pre-workout readiness check
+- Post-workout feedback collection
+- Update wellness data in fitness_metrics
+
+`src/app/dashboard/checkin/page.tsx` - Check-in form
+
+#### 7.3 Injury Prevention Warnings (Day 5)
+**Logic:**
+- Detect rapid CTL increase (>7 TSS/day ramp rate)
+- Consecutive days without recovery
+- Very low TSB (<-30) for extended period
+- Spike in fatigue/soreness scores
+
+`src/lib/services/injury-prevention.ts` - Warning logic
 
 ### Week 8: Strava Integration (Optional)
 
@@ -540,55 +621,16 @@ export async function GET(request: Request, { params }) {
 - Social features (kudos, comments)
 - Users who prefer Strava over Intervals.icu
 
-### Week 9: Advanced Coach Features
+### Week 9: Mobile Optimization & PWA
 
-#### 9.1 Weekly Performance Reviews (Days 1-2)
-**Files to create:**
-
-`src/lib/ai/weekly-review.ts` - Generate weekly summary
-```typescript
-export async function generateWeeklyReview(userId: string) {
-  // 1. Fetch last week's activities
-  // 2. Calculate weekly TSS, duration, adherence
-  // 3. Analyze performance trends
-  // 4. Use Claude to write review
-  // 5. Save as coach conversation
-  // 6. Optionally email user
-}
-```
-
-**Trigger:** Cron job every Monday morning
-
-#### 9.2 Automated Check-ins (Days 3-4)
-**Features:**
-- "How are you feeling?" prompts
-- Pre-workout readiness check
-- Post-workout feedback collection
-- Update wellness data in fitness_metrics
-
-`src/app/dashboard/checkin/page.tsx` - Check-in form
-
-#### 9.3 Injury Prevention Warnings (Day 5)
-**Logic:**
-- Detect rapid CTL increase (>7 TSS/day ramp rate)
-- Consecutive days without recovery
-- Very low TSB (<-30) for extended period
-- Spike in fatigue/soreness scores
-
-`src/lib/services/injury-prevention.ts` - Warning logic
-- Show warnings in dashboard
-- Coach mentions in conversations
-- Suggest adjustments to plan
-
-### Week 10: Mobile & PWA
-
-#### 10.1 Responsive Design (Days 1-3)
+#### 9.1 Responsive Design (Days 1-3)
 - Audit all pages for mobile responsiveness
 - Optimize chat UI for mobile
 - Mobile-friendly calendar
 - Bottom navigation for mobile
+- Touch-friendly controls
 
-#### 10.2 PWA Setup (Days 4-5)
+#### 9.2 PWA Setup (Days 4-5)
 **Files to create:**
 
 `public/manifest.json` - PWA manifest
@@ -598,6 +640,7 @@ export async function generateWeeklyReview(userId: string) {
 - Install as app on mobile
 - Offline access to recent activities
 - Push notifications (future)
+- Faster load times with caching
 
 ---
 

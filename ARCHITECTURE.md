@@ -66,7 +66,8 @@ A conversational AI cycling coach that analyzes training data, provides honest f
   - Single integration point for all data sources
   - User has Premium account with advanced features
   - Native training plan support
-  - Can push workouts to Garmin via Intervals.icu
+  - **Can push workouts to both Garmin AND Zwift automatically** (no manual steps!)
+  - Bi-directional sync: read activities, write workouts
 
 ### 2. Strava API v3
 - **Documentation**: https://developers.strava.com/docs/reference/
@@ -87,15 +88,21 @@ A conversational AI cycling coach that analyzes training data, provides honest f
   - ⚠️ Requires business developer approval (may take time)
 - **Strategy**: Use Intervals.icu to push to Garmin initially, apply for API access later
 
-### 4. Zwift Integration
-- **Documentation**: https://github.com/h4l/zwift-workout-file-reference
-- **Format**: XML-based .zwo files
-- **Integration Method**: File-based (no API)
+### 4. Zwift & Garmin Integration via Intervals.icu ✅ RECOMMENDED
+- **Documentation**: https://intervals.icu/api/v1/docs/swagger-ui/index.html
+- **Integration Method**: Push workouts to Intervals.icu calendar
 - **Capabilities**:
-  - ✅ Generate custom workout files (.zwo)
-  - ✅ Power-based or ERG mode workouts
-  - ✅ Include text instructions/intervals
-- **Implementation**: Generate .zwo files for user download, placed in `Documents/Zwift/Workouts/{ZwiftID}/`
+  - ✅ Create/update workouts on Intervals.icu calendar
+  - ✅ Automatic sync to Zwift (no manual file handling)
+  - ✅ Automatic sync to Garmin Connect (no API approval needed)
+  - ✅ Structured workouts with intervals, power zones, text instructions
+  - ✅ Single API call pushes to both platforms
+- **Implementation**: POST to `/api/v1/athlete/{id}/events` endpoint with workout structure
+- **Advantages**:
+  - Zero manual steps for user
+  - Works immediately without Garmin API approval
+  - Intervals.icu handles all sync complexity
+  - Single source of truth for planned workouts
 
 ## System Architecture
 
@@ -344,8 +351,8 @@ This gives Claude full context to provide personalized, data-driven coaching.
 
 **Why This Phase?**: Proves the core concept - can we create an AI coach that gives useful feedback? If this works, everything else is enhancement.
 
-### Phase 2: Training Plans & Zwift Export (Weeks 4-6)
-**Goal**: Coach can create plans and export to Zwift
+### Phase 2: Training Plans & Automatic Sync to Zwift/Garmin (Weeks 4-6)
+**Goal**: Coach can create plans and automatically sync to Zwift and Garmin
 
 **Features**:
 - ✅ Training plan generation
@@ -356,10 +363,11 @@ This gives Claude full context to provide personalized, data-driven coaching.
   - Show scheduled workouts
   - Mark workouts as completed
   - Match completed activities to planned workouts
-- ✅ Workout export to Zwift
-  - Generate .zwo files from workouts
-  - Download functionality
-  - Instructions for adding to Zwift
+- ✅ Automatic workout sync to Zwift & Garmin
+  - Push workouts to Intervals.icu calendar
+  - Intervals.icu automatically syncs to Zwift (appears in workout list)
+  - Intervals.icu automatically syncs to Garmin Connect (appears on calendar)
+  - Zero manual steps - fully automatic
 - ✅ Plan adherence tracking
   - Compare planned vs. actual
   - Coach feedback on adherence
@@ -370,38 +378,41 @@ This gives Claude full context to provide personalized, data-driven coaching.
 
 **Technical**:
 - Build training plan generation logic
-- Create .zwo file generator
+- Implement Intervals.icu workout push API integration
 - Calendar UI component
 - Data visualization library (Recharts or Chart.js)
 
-### Phase 3: Advanced Features (Weeks 7-10)
+### Phase 3: Advanced Features (Weeks 7-9)
 **Goal**: Polish and power-user features
 
 **Features**:
-- ✅ Direct Garmin integration
-  - Apply for Garmin API access
-  - Push workouts to Garmin Connect
-  - (Fallback: continue using Intervals.icu)
-- ✅ Strava integration
+- ✅ Strava integration (optional)
   - OAuth flow
   - Fetch Strava-specific data (segments, social features)
+  - Alternative data source option
 - ✅ Advanced coach features
   - Weekly performance reviews
   - Automated check-ins ("How are you feeling?")
   - Injury prevention warnings
+  - Pre-workout readiness assessment
 - ✅ Mobile optimization
   - Responsive design
   - PWA capabilities
+  - Offline mode for recent data
 - ✅ Customization
-  - Adjust coach personality
+  - Adjust coach personality (toughness, encouragement levels)
   - Set notification preferences
   - Configure auto-sync schedule
+- ✅ Enhanced workout features
+  - Workout library/templates
+  - Quick adjustments to planned workouts
+  - Workout notes and post-workout analysis
 
 **Technical**:
-- Garmin API integration
-- Strava OAuth flow
+- Strava OAuth flow (optional)
 - Scheduled jobs (cron) for auto-sync and check-ins
 - PWA manifest and service worker
+- Workout template system
 
 ### Phase 4: Polish & Growth (Weeks 11+)
 **Goal**: Production-ready and delightful to use

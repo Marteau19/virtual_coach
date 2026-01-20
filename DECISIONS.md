@@ -207,89 +207,87 @@ Cache all activities in Supabase database, syncing periodically from Intervals.i
 
 ---
 
-### ADR-006: File-Based Export for Zwift (.zwo files)
+### ADR-006: Automatic Workout Sync via Intervals.icu
 
 **Date**: 2026-01-20
-**Status**: Accepted
+**Status**: Accepted (Revised)
 **Deciders**: Project Team
 
 #### Context
-Zwift doesn't have a public API for uploading workouts. Options:
-- Generate .zwo files for manual upload
-- Reverse engineer unofficial API (risky)
-- Use Dropbox/cloud sync (complex)
-- Wait for official API (may never come)
+We need to sync generated workouts to Zwift and Garmin devices. Options considered:
+- Generate .zwo files for manual upload to Zwift + apply for Garmin API
+- Push workouts to Intervals.icu (which auto-syncs to both Zwift and Garmin)
+- Direct integration with Zwift and Garmin APIs (no public APIs available)
 
 #### Decision
-Generate .zwo XML files that users download and manually place in their Zwift directory.
+Push workouts to Intervals.icu calendar, which automatically syncs to both Zwift and Garmin Connect.
 
 #### Rationale
 
 **Pros:**
-- Simple and reliable
-- No reverse engineering needed
-- Works regardless of Zwift app updates
-- Users maintain control
-- .zwo format is well-documented
-- Can export multiple workouts at once
+- **Zero manual steps** - fully automatic sync to both platforms
+- Single API integration point (Intervals.icu)
+- No Garmin API approval needed (Intervals.icu handles it)
+- No .zwo file generation/download needed
+- Workouts appear in Zwift workout list automatically
+- Workouts appear on Garmin Connect calendar automatically
+- User already has Intervals.icu Premium with these features enabled
+- Simpler codebase (less code to write and maintain)
+- Intervals.icu is the single source of truth for planned training
 
 **Cons:**
-- Extra manual step for users
-- Less seamless experience
-- Users need to know where to place files
+- Dependency on Intervals.icu for workout delivery
+- User must have Intervals.icu connected to Zwift and Garmin (already configured)
 
 #### Consequences
-- Need to implement .zwo XML generator
-- Need clear instructions/documentation for users
-- Can enhance later with Dropbox sync if desired
-- Works immediately without waiting for Zwift API
-- Acceptable trade-off for MVP
+- Implement Intervals.icu workout/event creation API
+- No need for .zwo file generator
+- No need for Garmin API application
+- Better user experience (completely automatic)
+- Faster development timeline
+- Single integration to maintain
 
 ---
 
-### ADR-007: Garmin via Intervals.icu, Direct API as Phase 3
+### ADR-007: Intervals.icu as Single Integration Point
 
 **Date**: 2026-01-20
-**Status**: Accepted
+**Status**: Accepted (Revised)
 **Deciders**: Project Team
 
 #### Context
-Garmin has official Training API but requires business developer approval. Options:
-- Apply for API access immediately
-- Use Intervals.icu's Garmin push feature
-- Both (use Intervals.icu initially, add direct later)
+Could integrate directly with multiple platforms (Garmin, Strava, Zwift) or use Intervals.icu as aggregator. Options:
+- Direct integration with each platform (3+ separate APIs)
+- Use Intervals.icu as primary integration point
 
 #### Decision
-Use Intervals.icu's Garmin integration for MVP, apply for direct API access in Phase 3.
+Use Intervals.icu as the single integration point for all activity data (read) and workout delivery (write).
 
 #### Rationale
 
-**Pros (Intervals.icu route):**
-- Works immediately without approval
-- User already connected Garmin to Intervals.icu
-- Proven and reliable
-- Zero setup required
+**Pros:**
+- **One integration instead of 3+** (Garmin, Strava, Zwift all covered)
+- Intervals.icu already aggregates data from all user's connected platforms
+- Advanced metrics calculated automatically (CTL/ATL/TSB, power curves)
+- Can read activities AND write workouts through same API
+- User has Premium account with full API access
+- Well-documented REST API with Swagger
+- No approval processes needed
+- Bi-directional sync: read training history, write training plans
 
 **Cons:**
-- Depends on Intervals.icu as middleman
-- Less control over sync timing
-
-**Pros (Direct API - later):**
-- More control
-- Can push workouts directly
-- No intermediary
-
-**Cons:**
-- Requires business approval (takes time)
-- More complex integration
-- Additional OAuth flow
+- Single point of dependency
+- If Intervals.icu is down, can't sync new data (mitigated by local caching)
+- Requires user to have Intervals.icu account
 
 #### Consequences
-- MVP works immediately with Garmin devices
-- Apply for Garmin API access during Phase 1
-- If approved, add direct integration in Phase 3
-- If not approved, Intervals.icu route still works fine
-- Best of both worlds: fast MVP + potential enhancement
+- Simpler architecture with fewer integration points
+- Faster development (weeks saved)
+- Lower maintenance burden (one API to maintain)
+- Users must have Intervals.icu account during onboarding
+- Cache activities locally to reduce dependency on external service
+- Can add direct platform integrations later if needed (Strava OAuth for social features, etc.)
+- Best practice: Intervals.icu for core training data, optional direct integrations for platform-specific features
 
 ---
 
