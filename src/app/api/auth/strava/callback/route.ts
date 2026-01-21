@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { STRAVA_CONFIG } from '@/lib/strava/oauth';
+import { STRAVA_SERVER_CONFIG } from '@/lib/strava/oauth';
 import axios from 'axios';
 
 export async function GET(request: Request) {
@@ -31,9 +31,9 @@ export async function GET(request: Request) {
     console.log('Scope granted:', scope);
 
     // Exchange code for tokens
-    const tokenResponse = await axios.post(STRAVA_CONFIG.tokenUrl, {
-      client_id: STRAVA_CONFIG.clientId,
-      client_secret: STRAVA_CONFIG.clientSecret,
+    const tokenResponse = await axios.post(STRAVA_SERVER_CONFIG.tokenUrl, {
+      client_id: STRAVA_SERVER_CONFIG.clientId,
+      client_secret: STRAVA_SERVER_CONFIG.clientSecret,
       code,
       grant_type: 'authorization_code',
     });
