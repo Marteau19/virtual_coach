@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function StravaTestPage() {
   const [accessToken, setAccessToken] = useState<string>('');
   const [activities, setActivities] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  // Check for stored token on mount
+  useEffect(() => {
+    const storedToken = sessionStorage.getItem('strava_access_token');
+    if (storedToken) {
+      setAccessToken(storedToken);
+      setIsConnected(true);
+    }
+  }, []);
 
   const fetchActivities = async (days: number = 30) => {
     if (!accessToken.trim()) {
@@ -48,6 +58,49 @@ export default function StravaTestPage() {
             ← Back to Home
           </a>
         </div>
+
+        {/* Connection Status */}
+        {isConnected ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-green-900 font-semibold">Connected to Strava</p>
+                  <p className="text-green-700 text-sm">Using OAuth token from session</p>
+                </div>
+              </div>
+              <a
+                href="/connect/strava"
+                className="text-sm text-green-700 hover:text-green-900 underline"
+              >
+                Reconnect
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-orange-900 font-semibold">Not Connected</p>
+                  <p className="text-orange-700 text-sm">Connect with OAuth for automatic authentication</p>
+                </div>
+              </div>
+              <a
+                href="/connect/strava"
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+              >
+                Connect Strava
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Access Token Input */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
