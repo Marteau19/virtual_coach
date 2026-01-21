@@ -1,10 +1,13 @@
 /**
  * Strava OAuth Configuration
+ *
+ * Note: Client-side code (browser) can only access NEXT_PUBLIC_* variables
+ * Server-side code (API routes) can access all variables
  */
 
+// Client-side accessible config (for authorization URL generation)
 export const STRAVA_CONFIG = {
-  clientId: process.env.STRAVA_CLIENT_ID || '',
-  clientSecret: process.env.STRAVA_CLIENT_SECRET || '',
+  clientId: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID || '',
   redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/strava/callback`,
 
   // Scopes we need
@@ -16,6 +19,13 @@ export const STRAVA_CONFIG = {
 
   // Strava OAuth URLs
   authorizeUrl: 'https://www.strava.com/oauth/authorize',
+  tokenUrl: 'https://www.strava.com/oauth/token',
+};
+
+// Server-side only config (for token exchange)
+export const STRAVA_SERVER_CONFIG = {
+  clientId: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID || '',
+  clientSecret: process.env.STRAVA_CLIENT_SECRET || '',
   tokenUrl: 'https://www.strava.com/oauth/token',
 };
 
