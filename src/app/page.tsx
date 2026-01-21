@@ -31,12 +31,18 @@ export default function Home() {
             Train smarter with personalized coaching powered by AI. Get honest feedback,
             custom training plans, and automatic workout sync to Zwift and Garmin.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <a
               href="/dashboard"
               className="rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
             >
               View Dashboard
+            </a>
+            <a
+              href="/test/intervals"
+              className="rounded-lg bg-green-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-green-500 transition-colors"
+            >
+              🧪 Test Intervals.icu
             </a>
             <a
               href="https://github.com/Marteau19/virtual_coach"
