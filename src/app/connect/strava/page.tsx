@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getStravaAuthUrl } from '@/lib/strava/oauth';
 
-export default function ConnectStravaPage() {
+function ConnectStravaContent() {
   const searchParams = useSearchParams();
   const [tokens, setTokens] = useState<any>(null);
   const [error, setError] = useState<string>('');
@@ -214,5 +214,20 @@ export default function ConnectStravaPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConnectStravaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ConnectStravaContent />
+    </Suspense>
   );
 }
