@@ -39,6 +39,12 @@ export default function Home() {
               View Dashboard
             </a>
             <a
+              href="/test/strava"
+              className="rounded-lg bg-orange-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-orange-700 transition-colors"
+            >
+              🧪 Test Strava
+            </a>
+            <a
               href="/test/intervals"
               className="rounded-lg bg-green-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-green-500 transition-colors"
             >
