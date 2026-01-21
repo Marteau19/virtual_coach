@@ -3,8 +3,8 @@
 import { useState } from 'react';
 
 export default function IntervalsTestPage() {
-  const [activities, setActivities] = useState<unknown>(null);
-  const [fitness, setFitness] = useState<unknown>(null);
+  const [activities, setActivities] = useState<any>(null);
+  const [fitness, setFitness] = useState<any>(null);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<Record<string, string>>({});
 
